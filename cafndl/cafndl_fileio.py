@@ -4,6 +4,7 @@ import numpy as np
 from cafndl_utils import augment_data
 
 def prepare_data_from_nifti(path_load, list_augments=[], scale_by_norm=True, slices=None):
+	
 	# get nifti
 	nib_load = nib.load(path_load)
 	print(nib_load.header)
