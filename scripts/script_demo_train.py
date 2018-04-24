@@ -113,7 +113,7 @@ num_poolings = 3
 num_conv_per_pooling = 3
 # related to training
 lr_init = 0.001
-num_epoch = 100
+num_epoch = 10
 ratio_validation = 0.1
 batch_size = 4
 # default settings
