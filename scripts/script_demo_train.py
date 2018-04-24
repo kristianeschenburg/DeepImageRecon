@@ -39,6 +39,7 @@ list_dataset_train =  [
 
 filename_checkpoint = '../checkpoints/model_demo_0001.ckpt'
 filename_init = '../checkpoints/model_demo.ckpt'
+filename_model = '../checkpoints/model_demo.h5'
 
 # List of training image pairs -- each index is 1 single pair
 # 'inputs' == low-res
@@ -166,6 +167,7 @@ history = model.fit(data_train_input, data_train_residual,
 t_end_train = datetime.datetime.now()
 print('finish training on data size {0} for {1} epochs using time {2}'.format(
 		data_train_input.shape, num_epoch, t_end_train - t_start_train))
+model.save(filename_model)
 
 
 '''
