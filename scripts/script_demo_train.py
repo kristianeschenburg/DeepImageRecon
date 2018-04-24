@@ -7,9 +7,9 @@ import datetime
 
 import sys
 sys.path.append('../cafndl/')
-from cafndl.cafndl_fileio import *
-from cafndl.cafndl_utils import *
-from cafndl.cafndl_network import *
+from cafndl_fileio import *
+from cafndl_utils import *
+from cafndl_network import *
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 
