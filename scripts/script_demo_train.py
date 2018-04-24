@@ -37,10 +37,6 @@ list_dataset_train =  [
 				] 
 """
 
-filename_checkpoint = '../checkpoints/model_demo_0001.ckpt'
-filename_init = '../checkpoints/model_demo.ckpt'
-filename_model = '../checkpoints/model_demo.h5'
-
 # List of training image pairs -- each index is 1 single pair
 # 'inputs' == low-res
 # 'gt' == ground-truth / high-res
@@ -113,7 +109,7 @@ num_poolings = 3
 num_conv_per_pooling = 3
 # related to training
 lr_init = 0.001
-num_epoch = 10
+num_epoch = 100
 ratio_validation = 0.1
 batch_size = 4
 # default settings
@@ -130,6 +126,17 @@ print('setup parameters')
 '''
 init model
 '''
+
+filename_checkpoint = '../checkpoints/model_demo_0001'
+filename_checkpoint = ''.join([filename_checkpoint,'.',str(num_epoch),'.ckpt'])
+
+filename_init = '../checkpoints/model_demo'
+filename_init = ''.join([filename_init,'.',str(num_epoch),'.ckpt'])
+
+filename_model = '../checkpoints/model_demo'
+filename_model = ''.join([filename_model,'.',str(num_epoch),'.h5'])
+
+
 callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
 								monitor='val_loss', 
 								save_best_only=True)
@@ -167,6 +174,7 @@ history = model.fit(data_train_input, data_train_residual,
 t_end_train = datetime.datetime.now()
 print('finish training on data size {0} for {1} epochs using time {2}'.format(
 		data_train_input.shape, num_epoch, t_end_train - t_start_train))
+
 model.save(filename_model)
 
 
