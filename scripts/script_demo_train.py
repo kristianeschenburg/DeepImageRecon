@@ -20,6 +20,8 @@ $ dicom2nifti DRF100 DRF100_nifti
 '''
 dataset
 '''
+
+"""
 filename_checkpoint = '../ckpt/model_demo_0001.ckpt'
 filename_init = '../ckpt/model_demo.ckpt'
 list_dataset_train =  [
@@ -30,7 +32,20 @@ list_dataset_train =  [
 				 'gt':'/data/enhaog/data_lowdose/GBM_Ex1496/DRF001_nifti/800_.nii.gz'
 				}
 				] 
-num_dataset_train = len(list_dataset_train)                
+"""
+
+filename_checkpoint = '../checkpoints/model_demo_0001.ckpt'
+filename_init = '../checkpoints/model_demo.ckpt'
+
+# List of training image pairs -- each index is 1 single pair
+# 'inputs' == low-res
+# 'gt' == ground-truth / high-res
+
+list_training_data = [{
+        'inputs': '../test_data/AX_Flair_Clear.nii.gz',
+        'gt': '../test_data/T2_Flair_Sense.nii.gz'}]
+
+num_dataset_train = len(list_training_data)                
 print('process {0} data description'.format(num_dataset_train))
 
 '''
@@ -58,17 +73,19 @@ generate train data
 list_train_input = []
 list_train_gt = []        
 for index_data in range(num_dataset_train):
-	# directory
-	path_train_input = list_dataset_train[index_data]['input']
-	path_train_gt = list_dataset_train[index_data]['gt']
-	
-	# load data
-	data_train_input = prepare_data_from_nifti(path_train_input, list_augments)
-	data_train_gt = prepare_data_from_nifti(path_train_gt, list_augments)
-
-	# append
-	list_train_input.append(data_train_input)
-	list_train_gt.append(data_train_gt)
+    # directory
+    path_train_input = list_training_data[index_data]['inputs']
+    print path_train_input
+    path_train_gt = list_training_data[index_data]['gt']
+    print path_train_gt
+    
+    # load data
+    data_train_input = prepare_data_from_nifti(path_train_input, list_augments)
+    data_train_gt = prepare_data_from_nifti(path_train_gt, list_augments)
+    
+    # append
+    list_train_input.append(data_train_input)
+    list_train_gt.append(data_train_gt)
 
 
 # generate and scale dataset    
