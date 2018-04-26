@@ -13,6 +13,14 @@ from cafndl_network import *
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs',help='Training epochs.',required=False,type=int,default=100)
+args = parser.parse_args()
+
+num_epoch = args.epochs
+
 '''
 convert dicom to nifti
 $ mkdir DRF100_nifti
@@ -109,7 +117,7 @@ num_poolings = 3
 num_conv_per_pooling = 3
 # related to training
 lr_init = 0.001
-num_epoch = 100
+#num_epoch = 100
 ratio_validation = 0.1
 batch_size = 4
 # default settings
@@ -134,7 +142,10 @@ filename_init = '../checkpoints/model_demo'
 filename_init = ''.join([filename_init,'.',str(num_epoch),'.ckpt'])
 
 filename_model = '../checkpoints/model_demo'
-filename_model = ''.join([filename_model,'.',str(num_epoch),'.h5'])
+filename_model = ''.join([filename_model,'.',str(num_epoch),'.json'])
+
+filename_modelweights = '../checkpoints/model_demo'
+filename_modelweights = ''.join([filename_modelweights,'.weights.',str(num_epoch),'.h5'])
 
 
 callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
@@ -175,8 +186,12 @@ t_end_train = datetime.datetime.now()
 print('finish training on data size {0} for {1} epochs using time {2}'.format(
 		data_train_input.shape, num_epoch, t_end_train - t_start_train))
 
-model.save(filename_model)
-
+# serialize model to JSON
+model_json = model.to_json()
+with open(filename_model,'w') as json_file:
+    json_file.write(model_json)
+model.save_weights(filename_modelweights)
+print("Saved model to disk.")
 
 '''
 save training results
