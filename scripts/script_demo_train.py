@@ -17,6 +17,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs',help='Training epochs.',required=False,type=int,default=100)
+parser.add_argument('--outname',help='Output name extension.',required=False,type=str,default=None)
 args = parser.parse_args()
 
 num_epoch = args.epochs
@@ -50,8 +51,11 @@ list_dataset_train =  [
 # 'gt' == ground-truth / high-res
 
 list_training_data = [{
-        'inputs': '../test_data/AX_Flair_Clear.nii.gz',
-        'gt': '../test_data/T2_Flair_Sense.nii.gz'}]
+        'inputs': '../test_data/subj_1/AX_Flair_Clear.nii.gz',
+        'gt': '../test_data/subj_1/T2_Flair_Sense.nii.gz'},
+        {'inputs': '../test_data/subj_2/AX_Flair_Clear.nii.gz',
+        'gt': '../test_data/subj_2/T2_Flair_Sense.nii.gz'
+        }]
 
 num_dataset_train = len(list_training_data)                
 print('process {0} data description'.format(num_dataset_train))
@@ -135,17 +139,22 @@ print('setup parameters')
 init model
 '''
 
+if args.outname:
+	outname = ''.join(['.',args.outname,'.'])
+else:
+	outname = ''
+
 filename_checkpoint = '../checkpoints/model_demo_0001'
-filename_checkpoint = ''.join([filename_checkpoint,'.',str(num_epoch),'.ckpt'])
+filename_checkpoint = ''.join([filename_checkpoint,outname,'.',str(num_epoch),'.ckpt'])
 
 filename_init = '../checkpoints/model_demo'
-filename_init = ''.join([filename_init,'.',str(num_epoch),'.ckpt'])
+filename_init = ''.join([filename_init,outname,'.',str(num_epoch),'.ckpt'])
 
 filename_model = '../checkpoints/model_demo'
-filename_model = ''.join([filename_model,'.',str(num_epoch),'.json'])
+filename_model = ''.join([filename_model,outname,'.',str(num_epoch),'.json'])
 
 filename_modelweights = '../checkpoints/model_demo'
-filename_modelweights = ''.join([filename_modelweights,'.weights.',str(num_epoch),'.h5'])
+filename_modelweights = ''.join([filename_modelweights,outname,'.weights.',str(num_epoch),'.h5'])
 
 
 callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
