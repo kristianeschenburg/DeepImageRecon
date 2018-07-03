@@ -43,6 +43,7 @@ print('process {0} data description'.format(num_dataset_train))
 
 """ Load output parameters """
 outname = cfg['data_save']['modelname']
+outdirc = cfg['data_save']['outputdir']
 
 
 
@@ -162,18 +163,11 @@ print('setup parameters')
 init model
 '''
 
-filename_checkpoint = '../checkpoints/model_demo_0001'
-filename_checkpoint = ''.join([filename_checkpoint,outname,'.',str(epochs),'.ckpt'])
+filename_checkpoint = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.ckpt'])
+filename_model = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.json'])
+filename_weights = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.weights.json'])
 
-filename_init = '../checkpoints/model_demo'
-filename_init = ''.join([filename_init,outname,'.',str(epochs),'.ckpt'])
-
-filename_model = '../checkpoints/model_demo'
-filename_model = ''.join([filename_model,outname,'.',str(epochs),'.json'])
-
-filename_modelweights = '../checkpoints/model_demo'
-filename_modelweights = ''.join([filename_modelweights,outname,'.weights.',str(epochs),'.h5'])
-
+filename_init = ''
 
 callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
 								monitor='val_loss', 
