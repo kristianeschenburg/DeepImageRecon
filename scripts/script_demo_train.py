@@ -23,7 +23,7 @@ parser.add_argument('--modelname',help='Output file name to save model, coeffici
 	required=False,type=str,default=None)
 
 parser.add_argument('--byslice',help='Treat each slice as a training image.',
-	required=Fasle,type=bool,choices=[True,False],defaul=False)
+	required=False,type=bool,choices=[True,False],defaul=False)
 
 parser.add_argument('--loss',help='Loss function to use.',required=False,
 	type=str,default='mean_absolute_error',choices=['mean_squared_error',
