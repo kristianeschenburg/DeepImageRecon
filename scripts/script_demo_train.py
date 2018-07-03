@@ -1,4 +1,4 @@
-import argparse, datatime, os, yaml
+import argparse, datetime, os, yaml
 import sys
 sys.path.append('../cafndl/')
 
