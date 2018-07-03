@@ -77,14 +77,14 @@ for index_data in range(num_dataset_train):
     print('Noise image: {:}'.format(path_train_noise))
     path_image_noise = nb.load(path_train_noise)
     train_noise = path_image_noise.get_data()
-    [nx,ny,nz] = train_noise.shape()
+    [nx,ny,nz] = train_noise.shape
 
     # get clean image file path
     path_train_truth = list_training_data[index_data]['gt']
     print('Ground truth image: {:}'.format(path_train_truth))
     path_image_truth = nb.load(path_train_noise)
     train_truth = path_image_noise.get_data()
-    [tx,ty,tz] = train_truth.shape()
+    [tx,ty,tz] = train_truth.shape
     
     # if using each slice to train
     if args.byslice:
