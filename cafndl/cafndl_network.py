@@ -28,14 +28,19 @@ def deepEncoderDecoder(num_channel_input=1, num_channel_output=1,
 	img_rows=128, img_cols=128, y=np.array([-1,1]), 
 	lr_init=None, loss_function=mean_absolute_error, metrics_monitor=[PSNRLoss, mean_absolute_error, mean_squared_error],
 	num_poolings = 3, num_conv_per_pooling = 3, 
-	with_bn=False, verbose=1):
+	batch_norm=False, verbose=1):
+    
 	# BatchNorm
-	if with_bn:
+	if batch_norm:
 		lambda_bn = lambda x: BatchNormalization()(x)
 	else:
 		lambda_bn = lambda x: x
+
+
 	# layers
-#     For 2D data (e.g. image), "tf" assumes (rows, cols, channels) while "th" assumes (channels, rows, cols).
+	# For 2D data (e.g. image), "tf" assumes (rows, cols, channels) while "th" assumes (channels, rows, cols).
+	# inputs specifies to Keras what sort of data to expects (nrows x ncols x nchannels)
+	# Does not include batch size, but object can be parameterized with static batch size (i.e. batch_size =)
 	inputs = Input((img_rows, img_cols, num_channel_input))  
 	if verbose:
 		print(inputs)

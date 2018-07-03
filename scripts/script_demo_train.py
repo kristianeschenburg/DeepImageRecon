@@ -1,8 +1,7 @@
 from scipy import io as sio
 import numpy as np
 import os
-import dicom
-import nibabel as nib
+import nibabel as nb
 import datetime
 
 import sys
@@ -13,41 +12,43 @@ from cafndl_network import *
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 
+import yaml
+
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs',help='Training epochs.',
-	required=False,type=int,default=100)
-
-parser.add_argument('--modelname',help='Output file name to save model, coefficients, and epoch images.',
-	required=False,type=str,default=None)
-
-parser.add_argument('--byslice',help='Treat each slice as a training image.',
-	required=False,type=bool,choices=[True,False],default=False)
-
-parser.add_argument('--loss',help='Loss function to use.',required=False,
-	type=str,default='mean_absolute_error',choices=['mean_squared_error',
-	'mean_absolute_error','kullback_leibler_divergence',
-	'mean_absolute_percentage_error'])
-
+parser.add_argument('-config','--configuration',
+                    help='Configuration file with parameters.',
+                    required=True,type=str)
 args = parser.parse_args()
 
-num_epoch = args.epochs
 
-# input noisy / clean image pairs
-# constitute the entire set of training data
-list_training_data = [{
-        'inputs': '../test_data/subj_1/AX_Flair_Clear.nii.gz',
-        'gt': '../test_data/subj_1/T2_Flair_Sense.nii.gz'},
-        {'inputs': '../test_data/subj_2/AX_Flair_Clear.nii.gz',
-        'gt': '../test_data/subj_2/T2_Flair_Sense.nii.gz'
-        }]
+""" Load configuration file/ """
+with open(args.configuration,'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
 
-num_dataset_train = len(list_training_data)                
+for attribute,params in cfg.items():
+    print(attribute)
+    print(params)
+
+    
+""" Load input parameters """
+by_slice = cfg['data_load']['by_slice']
+trf = cfg['data_load']['files']
+training_files = [{path: trf[signal][path] for path in trf[signal].keys()} for signal in trf.keys()]
+
+num_dataset_train = len(training_files)                
 print('process {0} data description'.format(num_dataset_train))
+    
+
+""" Load output parameters """
+outname = cfg['data_save']['modelname']
 
 
-# Build augmentation parameter list
+
+
+
+""" Build augmentation parameter list, don't really change this """
 list_augments = []
 num_augment_flipxy = 2
 num_augment_flipx = 2
@@ -66,83 +67,91 @@ print('will augment data with {0} augmentations'.format(num_augment))
 
 
 # Generate training data by applying augmentation transformations to each image slice
-list_train_input = []
-list_train_gt = []
+list_train_noise = []
+list_train_truth = []
 
-# Loop over each noisy / clean image pair
+
+""" Loop over each noisy / clean image pair """
 for index_data in range(num_dataset_train):
 
-	# get noisy image file path
-    path_train_noise = list_training_data[index_data]['inputs']
-    print('Noise image: {:}'.format(path_train_noise))
-    path_image_noise = nb.load(path_train_noise)
-    train_noise = path_image_noise.get_data()
-    [nx,ny,nz] = train_noise.shape
+	# Get noisy image file path
+    ptrn_noise = training_files[index_data]['noise']
+    print('Noise image: {:}'.format(ptrn_noise))
+    img_noise = nb.load(ptrn_noise).get_data()
+    [nx,ny,nz] = img_noise.shape
 
-    # get clean image file path
-    path_train_truth = list_training_data[index_data]['gt']
-    print('Ground truth image: {:}'.format(path_train_truth))
-    path_image_truth = nb.load(path_train_noise)
-    train_truth = path_image_noise.get_data()
-    [tx,ty,tz] = train_truth.shape
+    # Get clean image file path
+    ptrn_truth = training_files[index_data]['truth']
+    print('Ground truth image: {:}'.format(ptrn_truth))
+    img_truth = nb.load(ptrn_truth).get_data()
+    [tx,ty,tz] = img_truth.shape
     
-    # if using each slice to train
-    if args.byslice:
+    # If training slice by slice
+    if by_slice:
+        for zslice in np.arange(nz):
+            train_noise_slice = prepare_data_from_nifti(img_noise, list_augments,slices=[zslice])
+            list_train_noise.append(train_noise_slice)
+    
+        for zslice in np.arange(tz):
+            train_truth_slice = prepare_data_from_nifti(img_truth, list_augments,slices=[zslice])
+            list_train_truth.append(train_truth_slice)
 
-    	for zslice in np.arange(nz):
-    		train_noise_slice = prepare_data_from_nifti(train_noise, list_augments,slices=[zslice])
-    		list_train_input.append(train_noise_slice)
-
-    	for zslice in np.arange(tz):
-    		train_truth_slice = prepare_data_from_nifti(train_truth, list_augments,slices=[zslice])
-    		list_train_gt.append(train_truth_slice)
-
-    # otherwise load whole augmented volumes
+    # Otherwise load whole augmented volumes
     else:
-	    # load data
-	    data_train_input = prepare_data_from_nifti(train_noise, list_augments)
-	    data_train_gt = prepare_data_from_nifti(train_truth, list_augments)
-    
-	    # append
-	    list_train_input.append(data_train_input)
-	    list_train_gt.append(data_train_gt)
+	    list_train_noise.append(prepare_data_from_nifti(img_noise, list_augments))
+	    list_train_truth.append(prepare_data_from_nifti(img_truth, list_augments))
 
 
-# generate and scale dataset    
+""" Generate and scale dataset """
 scale_data = 100.
-data_train_input = scale_data * np.concatenate(list_train_input, axis = 0)
-data_train_gt = scale_data * np.concatenate(list_train_gt, axis = 0)    
-data_train_residual = data_train_gt - data_train_input
+data_train_noise = scale_data * np.concatenate(list_train_noise, axis = 0)
+data_train_truth = scale_data * np.concatenate(list_train_truth, axis = 0)    
+data_train_resid = data_train_truth - data_train_noise
 
-# data_train_input / data_train_gt are both of size (n-slices * n-augmentations) x X x Y x (n-channels -- should be 1)
 
+""" 
+Data_train_noise / data_train_truth
+both of size (n-slices * n-augmentations) x X x Y x (n-channels -- should be 1)
+"""
 print('mean, min, max')
-print(np.mean(data_train_input.flatten()),np.min(data_train_input.flatten()),np.max(data_train_input.flatten()))
-print(np.mean(data_train_gt.flatten()),np.min(data_train_gt.flatten()),np.max(data_train_gt.flatten()))
-print(np.mean(data_train_residual.flatten()),np.min(data_train_residual.flatten()),np.max(data_train_residual.flatten()))
+print(np.mean(data_train_noise.flatten()),np.min(data_train_noise.flatten()),
+      np.max(data_train_noise.flatten()))
+print(np.mean(data_train_truth.flatten()),np.min(data_train_truth.flatten()),
+      np.max(data_train_truth.flatten()))
+print(np.mean(data_train_resid.flatten()),np.min(data_train_resid.flatten()),
+      np.max(data_train_resid.flatten()))
+
 print('generate train dataset with augmentation size {0},{1}'.format(
-	data_train_input.shape, data_train_gt.shape))
+	data_train_noise.shape, data_train_truth.shape))
 
 
-'''
-setup parameters
-'''
+""" Load model parameters """
+modelparams = cfg['model']
+
+epochs = modelparams['epochs']
+loss_function = modelparams['loss_function']
+
+batch_norm = modelparams['batch_norm']
+batch_size = modelparams['batch_size']
+validation_split = modelparams['validation_split']
+
 # related to model
-num_poolings = 3
-num_conv_per_pooling = 3
+num_poolings = modelparams['num_poolings']
+num_conv_per_pooling = modelparams['num_conv_per_pooling']
 
 # learning rate, related to training
-lr_init = 0.001
+lr_init = modelparams['lr_init']
 
-#num_epoch = 100
-ratio_validation = 0.1
-batch_size = 4
+# Number of input and output channels
+num_channel_input = data_train_noise.shape[-1]
+num_channel_output = data_train_truth.shape[-1]
 
-# default settings
-num_channel_input = data_train_input.shape[-1]
-num_channel_output = data_train_gt.shape[-1]
-img_rows = data_train_input.shape[1]
-img_cols = data_train_gt.shape[1]
+# Expected input dimensionality
+img_rows = data_train_noise.shape[1]
+img_cols = data_train_truth.shape[1]
+
+
+# Default settings related to Keras, don't change
 keras_memory = 0.4
 keras_backend = 'tf'
 with_batch_norm = True
@@ -153,22 +162,17 @@ print('setup parameters')
 init model
 '''
 
-if args.modelname:
-	outname = ''.join(['.',args.modelname,'.'])
-else:
-	outname = ''
-
 filename_checkpoint = '../checkpoints/model_demo_0001'
-filename_checkpoint = ''.join([filename_checkpoint,outname,'.',str(num_epoch),'.ckpt'])
+filename_checkpoint = ''.join([filename_checkpoint,outname,'.',str(epochs),'.ckpt'])
 
 filename_init = '../checkpoints/model_demo'
-filename_init = ''.join([filename_init,outname,'.',str(num_epoch),'.ckpt'])
+filename_init = ''.join([filename_init,outname,'.',str(epochs),'.ckpt'])
 
 filename_model = '../checkpoints/model_demo'
-filename_model = ''.join([filename_model,outname,'.',str(num_epoch),'.json'])
+filename_model = ''.join([filename_model,outname,'.',str(epochs),'.json'])
 
 filename_modelweights = '../checkpoints/model_demo'
-filename_modelweights = ''.join([filename_modelweights,outname,'.weights.',str(num_epoch),'.h5'])
+filename_modelweights = ''.join([filename_modelweights,outname,'.weights.',str(epochs),'.h5'])
 
 
 callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
@@ -176,14 +180,16 @@ callback_checkpoint = ModelCheckpoint(filename_checkpoint,
 								save_best_only=True)
 setKerasMemory(keras_memory)
 model = deepEncoderDecoder(num_channel_input = num_channel_input,
-						num_channel_output = num_channel_output,
-						img_rows = img_rows,
-						img_cols = img_cols,
-						lr_init = lr_init, 
-						num_poolings = num_poolings, 
-						num_conv_per_pooling = num_conv_per_pooling, 
-						with_bn = with_batch_norm, verbose=1,
-						loss_function=args.loss)
+                           num_channel_output = num_channel_output,
+                           img_rows = img_rows,
+                           img_cols = img_cols,
+                           lr_init = lr_init,
+                           num_poolings = num_poolings,
+                           num_conv_per_pooling = num_conv_per_pooling,
+                           batch_norm = batch_norm,
+                           verbose=1,
+                           loss_function=loss_function)
+
 print('train model:', filename_checkpoint)
 print('parameter count:', model.count_params())
 
@@ -199,16 +205,19 @@ except:
 
 model.optimizer = Adam(lr = lr_init)
 t_start_train = datetime.datetime.now()
-history = model.fit(data_train_input, data_train_residual,
-			batch_size = batch_size,
-			epochs = num_epoch,
-			verbose = 1,
-			shuffle = True,
-			callbacks = [callback_checkpoint],
-			validation_split = ratio_validation)
+
+history = model.fit(data_train_noise,
+                    data_train_resid,
+                    batch_size = batch_size,
+                    epochs = epochs,
+                    verbose = 1,
+                    shuffle = True,
+                    callbacks = [callback_checkpoint],
+                    validation_split = validation_split)
+
 t_end_train = datetime.datetime.now()
 print('finish training on data size {0} for {1} epochs using time {2}'.format(
-		data_train_input.shape, num_epoch, t_end_train - t_start_train))
+		data_train_noise.shape, epochs, t_end_train - t_start_train))
 
 # serialize model to JSON
 model_json = model.to_json()
