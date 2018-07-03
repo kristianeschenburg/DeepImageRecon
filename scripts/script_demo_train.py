@@ -1,20 +1,19 @@
-from scipy import io as sio
-import numpy as np
-import os
-import nibabel as nb
-import datetime
-
+import argparse, datatime, os, yaml
 import sys
 sys.path.append('../cafndl/')
+
+import nibabel as nb
+import numpy as np
+from scipy import io as sio
+
 from cafndl_fileio import *
 from cafndl_utils import *
 from cafndl_network import *
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 
-import yaml
 
-import argparse
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-config','--configuration',
