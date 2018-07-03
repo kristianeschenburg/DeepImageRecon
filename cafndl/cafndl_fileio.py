@@ -1,41 +1,45 @@
 import dicom
-import nibabel as nib
+import nibabel as nb
 import numpy as np
 from cafndl_utils import augment_data
 
-def prepare_data_from_nifti(path_load, list_augments=[], scale_by_norm=True, slices=None):
-	
-	# get nifti
-	nib_load = nib.load(path_load)
-	print(nib_load.header)
-	
-	# get data
-	data_load = nib_load.get_data()
-	
-	# transpose to slice*x*y*channel
-	if np.ndim(data_load)==3:
-		data_load = data_load[:,:,:,np.newaxis]
-	data_load = np.transpose(data_load, [2,0,1,3])
+def prepare_data_from_nifti(data_volume, list_augments=[], scale_by_norm=True, slices=None):
+
+	"""
+    Parameters:
+    - - - - -
+        data_volume: input volume
+        list_augments: types of volumetric transformations to apply (flipx/y, flipxy, shiftx/y)
+        scale_by_norm: normalize the volume data
+        slices: specific slices to augment. |slices| = number of slices in original volume Z-dimension.
+    """
+
+	# transpose to slice*x*y*channel (slice = z-dimension)
+	if np.ndim(data_volume)==3:
+		data_volume = data_volume[:,:,:,np.newaxis]
+	data_volume = np.transpose(data_volume, [2,0,1,3])
 	
 	# scale
 	if scale_by_norm:
-		data_load = data_load / np.linalg.norm(data_load.flatten())
+		data_volume = data_volume / np.linalg.norm(data_volume.flatten())
 	
 	# extract slices
 	if slices is not None:
-		data_load = data_load[slices,:,:,:]
+		data_volume = data_volume[slices,:,:,:]
 
 	# finish loading data
-	print('loaded from {0}, data size {1} (sample, x, y, channel)'.format(path_load, data_load.shape))    
+	print('Image loaded, data size {:} (sample, x, y, channel)'.format(data_volume.shape))    
 
 	
 	# augmentation
 	if len(list_augments)>0:
-		print('data augmentation')
+
 		list_data = []
+
 		for augment in list_augments:
-			print(augment)
-			data_augmented = augment_data(data_load, axis_xy = [1,2], augment = augment)
-			list_data.append(data_augmented.reshape(data_load.shape))
-		data_load = np.concatenate(list_data, axis = 0)
-	return data_load
+			data_augmented = augment_data(data_volume, axis_xy = [1,2], augment = augment)
+			list_data.append(data_augmented.reshape(data_volume.shape))
+
+		data_volume = np.concatenate(list_data, axis = 0)
+
+	return data_volume

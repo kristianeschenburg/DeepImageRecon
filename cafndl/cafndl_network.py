@@ -5,7 +5,7 @@ from keras.layers import Input, merge, Conv2D, Conv2DTranspose, BatchNormalizati
 from keras.layers.merge import add as keras_add
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.optimizers import Adam
-from keras.losses import mean_absolute_error, mean_squared_error
+from keras.losses import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error, kullback_leibler_divergence 
 from keras import backend as K
 from cafndl_metrics import PSNRLoss
 import numpy as np

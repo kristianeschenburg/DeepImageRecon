@@ -16,40 +16,26 @@ from keras.optimizers import Adam
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs',help='Training epochs.',required=False,type=int,default=100)
-parser.add_argument('--outname',help='Output name extension.',required=False,type=str,default=None)
+parser.add_argument('--epochs',help='Training epochs.',
+	required=False,type=int,default=100)
+
+parser.add_argument('--modelname',help='Output file name to save model, coefficients, and epoch images.',
+	required=False,type=str,default=None)
+
+parser.add_argument('--byslice',help='Treat each slice as a training image.',
+	required=Fasle,type=bool,choices=[True,False],defaul=False)
+
+parser.add_argument('--loss',help='Loss function to use.',required=False,
+	type=str,default='mean_absolute_error',choices=['mean_squared_error',
+	'mean_absolute_error','kullback_leibler_divergence',
+	'mean_absolute_percentage_error'])
+
 args = parser.parse_args()
 
 num_epoch = args.epochs
 
-'''
-convert dicom to nifti
-$ mkdir DRF100_nifti
-$ dicom2nifti DRF100 DRF100_nifti
-'''
-
-
-'''
-dataset
-'''
-
-"""
-filename_checkpoint = '../ckpt/model_demo_0001.ckpt'
-filename_init = '../ckpt/model_demo.ckpt'
-list_dataset_train =  [
-				{
-				 'inputs':[
-				 '/data/enhaog/data_lowdose/GBM_Ex1496/DRF20_nifti/802_.nii.gz',
-				 '/data/enhaog/data_lowdose/GBM_Ex1496/DRF100_nifti/803_.nii.gz'],
-				 'gt':'/data/enhaog/data_lowdose/GBM_Ex1496/DRF001_nifti/800_.nii.gz'
-				}
-				] 
-"""
-
-# List of training image pairs -- each index is 1 single pair
-# 'inputs' == low-res
-# 'gt' == ground-truth / high-res
-
+# input noisy / clean image pairs
+# constitute the entire set of training data
 list_training_data = [{
         'inputs': '../test_data/subj_1/AX_Flair_Clear.nii.gz',
         'gt': '../test_data/subj_1/T2_Flair_Sense.nii.gz'},
@@ -60,9 +46,8 @@ list_training_data = [{
 num_dataset_train = len(list_training_data)                
 print('process {0} data description'.format(num_dataset_train))
 
-'''
-augmentation
-'''
+
+# Build augmentation parameter list
 list_augments = []
 num_augment_flipxy = 2
 num_augment_flipx = 2
@@ -79,25 +64,48 @@ for flipxy in range(num_augment_flipxy):
 num_augment=len(list_augments)
 print('will augment data with {0} augmentations'.format(num_augment))
 
-'''
-generate train data
-'''
+
+# Generate training data by applying augmentation transformations to each image slice
 list_train_input = []
-list_train_gt = []        
+list_train_gt = []
+
+# Loop over each noisy / clean image pair
 for index_data in range(num_dataset_train):
-    # directory
-    path_train_input = list_training_data[index_data]['inputs']
-    print path_train_input
-    path_train_gt = list_training_data[index_data]['gt']
-    print path_train_gt
+
+	# get noisy image file path
+    path_train_noise = list_training_data[index_data]['inputs']
+    print('Noise image: {:}'.format(path_train_noise))
+    path_image_noise = nb.load(path_train_noise)
+    train_noise = path_image_noise.get_data()
+    [nx,ny,nz] = train_noise.shape()
+
+    # get clean image file path
+    path_train_truth = list_training_data[index_data]['gt']
+    print('Ground truth image: {:}'.format(path_train_truth))
+    path_image_truth = nb.load(path_train_noise)
+    train_truth = path_image_noise.get_data()
+    [tx,ty,tz] = train_truth.shape()
     
-    # load data
-    data_train_input = prepare_data_from_nifti(path_train_input, list_augments)
-    data_train_gt = prepare_data_from_nifti(path_train_gt, list_augments)
+    # if using each slice to train
+    if args.byslice:
+
+    	for zslice in np.arange(nz):
+    		train_noise_slice = prepare_data_from_nifti(train_noise, list_augments,slices=[zslice])
+    		list_train_input.append(train_noise_slice)
+
+    	for zslice in np.arange(tz):
+    		train_truth_slice = prepare_data_from_nifti(train_truth, list_augments,slices=[zslice])
+    		list_train_gt.append(train_truth_slice)
+
+    # otherwise load whole augmented volumes
+    else:
+	    # load data
+	    data_train_input = prepare_data_from_nifti(train_noise, list_augments)
+	    data_train_gt = prepare_data_from_nifti(train_truth, list_augments)
     
-    # append
-    list_train_input.append(data_train_input)
-    list_train_gt.append(data_train_gt)
+	    # append
+	    list_train_input.append(data_train_input)
+	    list_train_gt.append(data_train_gt)
 
 
 # generate and scale dataset    
@@ -105,6 +113,9 @@ scale_data = 100.
 data_train_input = scale_data * np.concatenate(list_train_input, axis = 0)
 data_train_gt = scale_data * np.concatenate(list_train_gt, axis = 0)    
 data_train_residual = data_train_gt - data_train_input
+
+# data_train_input / data_train_gt are both of size (n-slices * n-augmentations) x X x Y x (n-channels -- should be 1)
+
 print('mean, min, max')
 print(np.mean(data_train_input.flatten()),np.min(data_train_input.flatten()),np.max(data_train_input.flatten()))
 print(np.mean(data_train_gt.flatten()),np.min(data_train_gt.flatten()),np.max(data_train_gt.flatten()))
@@ -119,11 +130,14 @@ setup parameters
 # related to model
 num_poolings = 3
 num_conv_per_pooling = 3
-# related to training
+
+# learning rate, related to training
 lr_init = 0.001
+
 #num_epoch = 100
 ratio_validation = 0.1
 batch_size = 4
+
 # default settings
 num_channel_input = data_train_input.shape[-1]
 num_channel_output = data_train_gt.shape[-1]
@@ -139,8 +153,8 @@ print('setup parameters')
 init model
 '''
 
-if args.outname:
-	outname = ''.join(['.',args.outname,'.'])
+if args.modelname:
+	outname = ''.join(['.',args.modelname,'.'])
 else:
 	outname = ''
 
@@ -168,7 +182,8 @@ model = deepEncoderDecoder(num_channel_input = num_channel_input,
 						lr_init = lr_init, 
 						num_poolings = num_poolings, 
 						num_conv_per_pooling = num_conv_per_pooling, 
-						with_bn = with_batch_norm, verbose=1)
+						with_bn = with_batch_norm, verbose=1,
+						loss_function=args.lossfunctin)
 print('train model:', filename_checkpoint)
 print('parameter count:', model.count_params())
 
