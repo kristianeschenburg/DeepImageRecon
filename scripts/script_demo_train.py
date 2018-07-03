@@ -183,7 +183,7 @@ model = deepEncoderDecoder(num_channel_input = num_channel_input,
 						num_poolings = num_poolings, 
 						num_conv_per_pooling = num_conv_per_pooling, 
 						with_bn = with_batch_norm, verbose=1,
-						loss_function=args.lossfunctin)
+						loss_function=args.loss)
 print('train model:', filename_checkpoint)
 print('parameter count:', model.count_params())
 
