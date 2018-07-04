@@ -162,9 +162,9 @@ print('setup parameters')
 init model
 '''
 
-filename_checkpoint = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.ckpt'])
-filename_model = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.json'])
-filename_weights = ''.join([outdirc,'model_demo',outname,'epochs.',str(epochs),'.weights.json'])
+filename_checkpoint = ''.join([outdirc,'model_demo',outname,'.ckpt'])
+filename_model = ''.join([outdirc,'model_demo',outname,'.json'])
+filename_modelweights = ''.join([outdirc,'model_demo',outname,'.weights.json'])
 
 filename_init = ''
 
