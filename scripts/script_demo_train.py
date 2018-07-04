@@ -37,7 +37,7 @@ for attribute,params in cfg.items():
 subjects = glob(''.join([cfg['data_load']['input_directory'],'*/']))
 
 noise_file = cfg['data_load']['noise']
-truth_file = cfg['data_lost']['truth']
+truth_file = cfg['data_load']['truth']
 
 training_files = [{'noise': ''.join([subj,noise_file]),
 					'truth': ''.join([subj,truth_file])} for subj in subjects]
@@ -51,9 +51,6 @@ print('process {0} data description'.format(num_dataset_train))
 """ Load output parameters """
 outname = cfg['data_save']['modelname']
 outdirc = cfg['data_save']['outputdir']
-
-
-
 
 
 """ Build augmentation parameter list, don't really change this """
