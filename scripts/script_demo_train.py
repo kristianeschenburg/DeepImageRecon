@@ -2,6 +2,8 @@ import argparse, datetime, os, yaml
 import sys
 sys.path.append('../cafndl/')
 
+from glob import glob
+
 import nibabel as nb
 import numpy as np
 from scipy import io as sio
@@ -32,9 +34,15 @@ for attribute,params in cfg.items():
 
     
 """ Load input parameters """
+subjects = glob(''.join([cfg['data_load']['input_directory'],'*/']))
+
+noise_file = cfg['data_load']['noise']
+truth_file = cfg['data_lost']['truth']
+
+training_files = [{'noise': ''.join([subj,noise_file]),
+					'truth': ''.join([subj,truth_file])} for subj in subjects]
+
 by_slice = cfg['data_load']['by_slice']
-trf = cfg['data_load']['files']
-training_files = [{path: trf[signal][path] for path in trf[signal].keys()} for signal in trf.keys()]
 
 num_dataset_train = len(training_files)                
 print('process {0} data description'.format(num_dataset_train))
