@@ -5,7 +5,7 @@ data_load:
   by_slice: True
 
 data_save:
-  modelname: '.epochs.20.cost.KL.'
+  modelname: 'epochs.20.cost.KL'
   outputdir: '../checkpoints/KL/'
 
 model:

@@ -132,28 +132,16 @@ print('generate train dataset with augmentation size {0},{1}'.format(
 
 """ Load model parameters """
 modelparams = cfg['model']
-
-epochs = modelparams['epochs']
-loss_function = modelparams['loss_function']
-
-batch_norm = modelparams['batch_norm']
-batch_size = modelparams['batch_size']
-validation_split = modelparams['validation_split']
-
-# related to model
-num_poolings = modelparams['num_poolings']
-num_conv_per_pooling = modelparams['num_conv_per_pooling']
-
-# learning rate, related to training
-lr_init = modelparams['lr_init']
+modelfile = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.json'])
+modelweights = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.weights.json'])
 
 # Number of input and output channels
-num_channel_input = data_train_noise.shape[-1]
-num_channel_output = data_train_truth.shape[-1]
+num_channel_input = data_test_noise.shape[-1]
+num_channel_output = data_test_truth.shape[-1]
 
 # Expected input dimensionality
-img_rows = data_train_noise.shape[1]
-img_cols = data_train_truth.shape[1]
+img_rows = data_test_noise.shape[1]
+img_cols = data_test_truth.shape[1]
 
 
 # Default settings related to Keras, don't change
@@ -167,8 +155,8 @@ print('setup parameters')
 init model
 '''
 
-filename_checkpoint = ''.join([outdirc,'model_demo',outname,'.ckpt'])
-filename_model = ''.join([outdirc,'model_demo',outname,'.json'])
+filename_checkpoint = ''.join([outdirc,'model_demo.',outname,'.ckpt'])
+filename_model = ''.join([outdirc,'model_demo.',outname,'.json'])
 filename_modelweights = ''.join([outdirc,'model_demo',outname,'.weights.json'])
 
 filename_init = ''

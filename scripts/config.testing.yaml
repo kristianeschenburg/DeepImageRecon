@@ -1,0 +1,9 @@
+test_data_load:
+  input_directory: '../data/'
+  noise: 'AX_Flair_Clear.nii.gz'
+  truth: 'T2_Flair_Sense.nii.gz'
+  by_slice: True
+
+model:
+  modeldir: '../checkpoints/KL/'
+  modelname: 'epochs.20.cost.KL'

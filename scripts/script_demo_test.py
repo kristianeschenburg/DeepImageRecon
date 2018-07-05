@@ -1,70 +1,81 @@
-from scipy import io as sio
+import argparse, datetime, os, yaml
+import sys
+sys.path.append('../cafndl/')
+
+from glob import glob
+
+import nibabel as nb
 import numpy as np
-import os
-import dicom
-import nibabel as nib
-import datetime
+from scipy import io as sio
+
 from cafndl_fileio import *
 from cafndl_utils import *
 from cafndl_network import *
-from cafndl_metrics import *
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
-
-'''
-convert dicom to nifti
-$ mkdir DRF100_nifti
-$ dicom2nifti DRF100 DRF100_nifti
-'''
+from keras.models import model_from_json
 
 
-'''
-dataset
-'''
-filename_checkpoint = '../ckpt/model_demo_0713.ckpt'
-list_dataset_test =  [
-				{
-				 'input':'/data/enhaog/data_lowdose/GBM_Ex1496/DRF100_nifti/803_.nii.gz',
-				 'gt':'/data/enhaog/data_lowdose/GBM_Ex1496/DRF001_nifti/800_.nii.gz'
-				},
-				{
-				 'input':'/data/enhaog/data_lowdose/GBM_Ex842/DRF100_nifti/803_.nii.gz',
-				 'gt':'/data/enhaog/data_lowdose/GBM_Ex842/DRF001_nifti/800_.nii.gz'
-				}
-				] 	
-filename_results = '../results/result_demo_0713'			   
-num_dataset_test = len(list_dataset_test)                
+parser = argparse.ArgumentParser()
+parser.add_argument('-config','--configuration',
+                    help='Configuration file with parameters.',
+                    required=True,type=str)
+args = parser.parse_args()
+
+
+""" Load configuration file/ """
+with open(args.configuration,'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
+
+for attribute,params in cfg.items():
+    print(attribute)
+    print(params)
+
+    
+""" Load input parameters """
+subjects = glob(''.join([cfg['data_load']['input_directory'],'*/']))
+
+noise_file = cfg['data_load']['noise']
+truth_file = cfg['data_load']['truth']
+
+testing_files = [{'noise': ''.join([subj,noise_file]),
+					'truth': ''.join([subj,truth_file])} for subj in subjects]
+
+num_dataset_test = len(training_files)                
 print('process {0} data description'.format(num_dataset_test))
+
+
+""" Loop over each noisy / clean image pair """
+for index_data in range(num_dataset_train):
+
+	# Get noisy image file path
+    ptrn_noise = testing_files[index_data]['noise']
+    print('Noise image: {:}'.format(ptrn_noise))
+    img_noise = nb.load(ptrn_noise).get_data()
+    [nx,ny,nz] = img_noise.shape
+
+    # Get clean image file path
+    ptrn_truth = testing_files[index_data]['truth']
+    print('Ground truth image: {:}'.format(ptrn_truth))
+    img_truth = nb.load(ptrn_truth).get_data()
+    [tx,ty,tz] = img_truth.shape
+    
+	list_test_noise.append(prepare_data_from_nifti(img_noise, list_augments))
+	list_test_truth.append(prepare_data_from_nifti(img_truth, list_augments))
+
 
 '''
 augmentation
 '''
 list_augments = []
 
-'''
-generate test data
-'''
-list_test_input = []
-list_test_gt = []        
-for index_data in range(num_dataset_test):
-	# directory
-	path_test_input = list_dataset_test[index_data]['input']
-	path_test_gt = list_dataset_test[index_data]['gt']
-	
-	# load data
-	data_test_input = prepare_data_from_nifti(path_test_input, [])
-	data_test_gt = prepare_data_from_nifti(path_test_gt, [])
-
-	# append
-	list_test_input.append(data_test_input)
-	list_test_gt.append(data_test_gt)	
-
 
 # generate test dataset
 scale_data = 100.
-data_test_input = scale_data * np.concatenate(list_test_input, axis = 0)
-data_test_gt = scale_data * np.concatenate(list_test_gt, axis = 0)    
+data_test_input = scale_data * np.concatenate(list_test_noise, axis = 0)
+data_test_gt = scale_data * np.concatenate(list_test_truth, axis = 0)    
 data_test_residual = data_test_gt - data_test_input
+
 print('mean, min, max')
 print(np.mean(data_test_input.flatten()),np.min(data_test_input.flatten()),np.max(data_test_input.flatten()))
 print(np.mean(data_test_gt.flatten()),np.min(data_test_gt.flatten()),np.max(data_test_gt.flatten()))
@@ -72,51 +83,32 @@ print(np.mean(data_test_residual.flatten()),np.min(data_test_residual.flatten())
 print('generate test dataset with augmentation size {0},{1}'.format(
 	data_test_input.shape, data_test_gt.shape))
 
-'''
-setup parameters
-'''
-keras_memory = 0.3
-keras_backend = 'tf'
-num_channel_input = data_test_input.shape[-1]
-num_channel_output = data_test_gt.shape[-1]
-img_rows = data_test_input.shape[1]
-img_cols = data_test_gt.shape[1]
-num_poolings = 3
-num_conv_per_pooling = 3
-lr_init = 0.001
-with_batch_norm = True
-ratio_validation = 0.1
-batch_size = 4
-always_retrain = 1
-num_epoch = 100
-print('setup parameters')
 
 
-'''
-define model
-'''
-setKerasMemory(keras_memory)
-model = deepEncoderDecoder(num_channel_input = num_channel_input,
-						num_channel_output = num_channel_output,
-						img_rows = img_rows,
-						img_cols = img_cols,
-						lr_init = lr_init, 
-						num_poolings = num_poolings, 
-						num_conv_per_pooling = num_conv_per_pooling, 
-						with_bn = with_batch_norm, verbose=1)
-print('train model:', filename_checkpoint)
-print('parameter count:', model.count_params())
+""" Load model parameters """
+modelparams = cfg['model']
+modelfile = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.json'])
+modelweights = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.weights.json'])
 
+json_file = open(modelfile,'r')
+loaded_model_json = json_file.read()
+json_file.close()
+model = model_from_json(loaded_model_json)
+model.load_weights(model_weights)
 
-'''
-load network
-'''
-model.load_weights(filename_checkpoint)
-print('model load from' + filename_checkpoint)        
+# Number of input and output channels
+num_channel_input = data_test_noise.shape[-1]
+num_channel_output = data_test_truth.shape[-1]
+
+# Expected input dimensionality
+img_rows = data_test_noise.shape[1]
+img_cols = data_test_truth.shape[1]
+
 
 '''
 apply model
 '''
+
 t_start_pred = datetime.datetime.now()
 data_test_output = model.predict(data_test_input, batch_size=batch_size)
 # clamp
