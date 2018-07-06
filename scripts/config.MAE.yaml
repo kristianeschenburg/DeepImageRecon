@@ -5,7 +5,7 @@ data_load:
   by_slice: True
 
 data_save:
-  modelname: '.epochs.20.cost.MAE.'
+  modelname: '.epochs.20.batch.1.cost.MAE.'
   outputdir: '../checkpoints/MAE/'
 
 model:
@@ -13,7 +13,7 @@ model:
   loss_function: 'mean_absolute_error'
   
   batch_norm: True
-  batch_size: 4
+  batch_size: 1
   validation_split: 0.1
   
   num_poolings: 3

@@ -5,5 +5,9 @@ test_data_load:
   by_slice: True
 
 model:
-  modeldir: '../checkpoints/KL/'
-  modelname: 'epochs.20.cost.KL'
+  modeldir: '../checkpoints/MAPE/'
+  modelname: 'epochs.20.cost.MAPE'
+
+output:
+  prediction_dir: '../checkpoints/MAPE/Predictions/'
+  filename_results: 'pred'
