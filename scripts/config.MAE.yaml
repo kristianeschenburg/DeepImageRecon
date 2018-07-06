@@ -1,15 +1,11 @@
 data_load:
-  files:
-    source1:
-      truth: '../data/subj_1/T2_Flair_Sense.nii.gz'
-      noise: '../data/subj_1/AX_Flair_Clear.nii.gz'
-    source2:
-      truth: '../data/subj_2/T2_Flair_Sense.nii.gz'
-      noise: '../data/subj_2/AX_Flair_Clear.nii.gz'
+  input_directory: '../data/'
+  noise: 'AX_Flair_Clear.nii.gz'
+  truth: 'T2_Flair_Sense.nii.gz'
   by_slice: True
 
 data_save:
-  modelname: '.epochs.20.cost.MAE.'
+  modelname: '.epochs.20.batch.1.cost.MAE.'
   outputdir: '../checkpoints/MAE/'
 
 model:
@@ -17,7 +13,7 @@ model:
   loss_function: 'mean_absolute_error'
   
   batch_norm: True
-  batch_size: 4
+  batch_size: 1
   validation_split: 0.1
   
   num_poolings: 3
