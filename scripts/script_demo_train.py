@@ -49,8 +49,8 @@ print('process {0} data description'.format(num_dataset_train))
     
 
 """ Load output parameters """
-outname = cfg['data_save']['modelname']
-outdirc = cfg['data_save']['outputdir']
+outname = cfg['model']['modelname']
+outdirc = cfg['model']['modeldir']
 
 
 """ Build augmentation parameter list, don't really change this """
@@ -126,22 +126,38 @@ print(np.mean(data_train_truth.flatten()),np.min(data_train_truth.flatten()),
 print(np.mean(data_train_resid.flatten()),np.min(data_train_resid.flatten()),
       np.max(data_train_resid.flatten()))
 
+
+
 print('generate train dataset with augmentation size {0},{1}'.format(
 	data_train_noise.shape, data_train_truth.shape))
 
 
+
 """ Load model parameters """
 modelparams = cfg['model']
-modelfile = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.json'])
-modelweights = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname'],'.weights.json'])
+model_basename = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname']])
+
+batch_size = modelparams['batch_size']
+batch_norm = modelparams['batch_norm']
+validation_split = modelparams['validation_split']
+
+epochs = modelparams['epochs']
+
+num_poolings = modelparams['num_poolings']
+num_conv_per_pooling = modelparams['num_conv_per_pooling']
+
+lr_init = modelparams['lr_init']
+
+loss_function = modelparams['loss_function']
 
 # Number of input and output channels
-num_channel_input = data_test_noise.shape[-1]
-num_channel_output = data_test_truth.shape[-1]
+num_channel_input = data_train_noise.shape[-1]
+num_channel_output = data_train_truth.shape[-1]
 
 # Expected input dimensionality
-img_rows = data_test_noise.shape[1]
-img_cols = data_test_truth.shape[1]
+img_rows = data_train_noise.shape[1]
+img_cols = data_train_truth.shape[1]
+
 
 
 # Default settings related to Keras, don't change
@@ -151,17 +167,16 @@ with_batch_norm = True
 print('setup parameters')
 
 
+
+
 '''
 init model
 '''
 
-filename_checkpoint = ''.join([outdirc,'model_demo.',outname,'.ckpt'])
-filename_model = ''.join([outdirc,'model_demo.',outname,'.json'])
-filename_modelweights = ''.join([outdirc,'model_demo',outname,'.weights.json'])
+model_checkpoint = model_basename + '.ckpt'
+model_init = ''
 
-filename_init = ''
-
-callback_checkpoint = ModelCheckpoint(filename_checkpoint, 
+callback_checkpoint = ModelCheckpoint(model_checkpoint, 
 								monitor='val_loss', 
 								save_best_only=True)
 setKerasMemory(keras_memory)
@@ -176,21 +191,24 @@ model = deepEncoderDecoder(num_channel_input = num_channel_input,
                            verbose=1,
                            loss_function=loss_function)
 
-print('train model:', filename_checkpoint)
+print('train model:', model_checkpoint)
 print('parameter count:', model.count_params())
+
 
 
 '''
 train network
 '''
 try:
-	model.load_weights(filename_init)
-	print('model trains from loading ' + filename_init)        
+	model.load_weights(model_init)
+	print('model trains from loading ' + model_init)        
 except:
 	print('model trains from scratch')
 
+
 model.optimizer = Adam(lr = lr_init)
 t_start_train = datetime.datetime.now()
+
 
 history = model.fit(data_train_noise,
                     data_train_resid,
@@ -201,16 +219,23 @@ history = model.fit(data_train_noise,
                     callbacks = [callback_checkpoint],
                     validation_split = validation_split)
 
+
+
 t_end_train = datetime.datetime.now()
 print('finish training on data size {0} for {1} epochs using time {2}'.format(
 		data_train_noise.shape, epochs, t_end_train - t_start_train))
 
-# serialize model to JSON
+
+
+# serialize final model to JSON
 model_json = model.to_json()
-with open(filename_model,'w') as json_file:
+model_file = model_basename + '.json'
+with open(model_file,'w') as json_file:
     json_file.write(model_json)
-model.save_weights(filename_modelweights)
+model.save_weights(model_basename+'.weights.json')
 print("Saved model to disk.")
+
+
 
 '''
 save training results
@@ -225,11 +250,13 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-path_figure = filename_checkpoint+'.png'
+path_figure = model_basename + '.png'
 plt.savefig(path_figure)
+
+
 
 # save history dictionary
 import json
-path_history = filename_checkpoint+'.json'
+path_history = model_basename +'history.json'
 with open(path_history, 'w') as outfile:
     json.dump(history.history, outfile)

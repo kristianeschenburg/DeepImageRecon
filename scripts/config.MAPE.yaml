@@ -4,11 +4,10 @@ data_load:
   truth: 'T2_Flair_Sense.nii.gz'
   by_slice: True
 
-data_save:
-  modelname: '.epochs.20.batch.1.cost.MAPE.'
-  outputdir: '../checkpoints/MAPE/'
-
 model:
+  modeldir: '../checkpoints/MAPE/'
+  modelname: 'epochs.20.batch.1.cost.MAPE'
+
   epochs: 20
   loss_function: 'mean_absolute_percentage_error'
   

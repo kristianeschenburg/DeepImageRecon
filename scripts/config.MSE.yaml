@@ -4,11 +4,10 @@ data_load:
   truth: 'T2_Flair_Sense.nii.gz'
   by_slice: True
 
-data_save:
-  modelname: '.epochs.20.batch.1.cost.MSE.'
-  outputdir: '../checkpoints/MSE/'
-
 model:
+  modeldir: '../checkpoints/MSE/'
+  modelname: 'epochs.20.batch.1.cost.MSE'
+
   epochs: 20
   loss_function: 'mean_squared_error'
   
