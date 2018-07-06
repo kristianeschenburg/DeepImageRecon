@@ -1,0 +1,16 @@
+nohup: ignoring input
+/mnt/home/keschenb/anaconda2/lib/python2.7/site-packages/dicom/__init__.py:53: UserWarning: 
+This code is using an older version of pydicom, which is no longer 
+maintained as of Jan 2017.  You can access the new pydicom features and API 
+by installing `pydicom` from PyPI.
+See 'Transitioning to pydicom 1.x' section at pydicom.readthedocs.org 
+for more information.
+
+  warnings.warn(msg)
+/mnt/home/keschenb/anaconda2/lib/python2.7/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+Using TensorFlow backend.
+Traceback (most recent call last):
+  File "script_demo_train.py", line 28, in <module>
+    with open(args.configuration,'r') as ymlfile:
+IOError: [Errno 2] No such file or directory: 'config.^CE.yaml'
