@@ -8,3 +8,6 @@
 *.nii.gz
 *.nii
 *.png
+*.log
+*.json
+*.ckpt
