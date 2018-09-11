@@ -135,7 +135,7 @@ print('generate train dataset with augmentation size {0},{1}'.format(
 
 """ Load model parameters """
 modelparams = cfg['model']
-model_basename = ''.join([modelparams['modeldir'],'model_demo.',modelparams['modelname']])
+model_basename = ''.join([modelparams['modeldir'],modelparams['modelname']])
 
 batch_size = modelparams['batch_size']
 batch_norm = modelparams['batch_norm']

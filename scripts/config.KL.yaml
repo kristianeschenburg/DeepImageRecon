@@ -6,7 +6,7 @@ data_load:
 
 model:
   modeldir: '../checkpoints/KL/'
-  modelname: 'epochs.20.batch.1.cost.KL'
+  modelname: 'model.epochs.20.batch.1.cost.KL'
 
   epochs: 20
   loss_function: 'kullback_leibler_divergence'
