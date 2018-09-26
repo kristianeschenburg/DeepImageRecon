@@ -26,6 +26,7 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numpy as np
+import pandas as pd
 
 def makeFslXfmMatrix(T, R, S, filename):
 
@@ -56,7 +57,7 @@ def makeFslXfmMatrix(T, R, S, filename):
     
     tx = R[0]
     ty = R[1]
-    tx = R[2]
+    tz = R[2]
 
     Rx = np.asarray([[1, 0, 0],
                      [0, np.cos(tx), np.sin(tx)],
@@ -74,4 +75,7 @@ def makeFslXfmMatrix(T, R, S, filename):
     RS = R3.dot(S3)
     M = np.row_stack(
         [np.column_stack([RS, T]), 
-        [0,0,0,1])
+        [0,0,0,1]])
+
+    matrix = pd.DataFrame(M)
+    matrix.to_csv(filename,index=False,header=None,sep=' ')
